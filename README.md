@@ -207,7 +207,17 @@ Following Agile SCRUM methodology with 12 sprints:
 - [x] Exception handling
 - [x] Logging
 
-### ⏳ Sprint 2-12: In Progress
+### ✅ Sprint 2: Structure Extraction (COMPLETED)
+- [x] Report domain models (DomainReport, ReportSection)
+- [x] StructureExtractor - maps ontology classes to report sections
+- [x] SectionNumberGenerator - hierarchical numbering (1, 1.1, 1.2, etc.)
+- [x] Section hierarchy management
+- [x] Configurable max depth
+- [x] Section statistics and queries
+- [x] Comprehensive unit tests
+- [x] Demo script showing end-to-end flow
+
+### ⏳ Sprint 3-12: In Progress
 
 See project documentation for detailed sprint breakdown.
 
