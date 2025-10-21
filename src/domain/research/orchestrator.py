@@ -5,6 +5,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
+from src.domain.research.aggregator import ResearchAggregator
 from src.domain.research.exceptions import ResearchException
 from src.domain.research.models import (
     Fact,
@@ -54,6 +55,9 @@ class ResearchOrchestrator:
         self.cache_enabled = cache_enabled
         self.cache_ttl_hours = cache_ttl_hours
         self.max_concurrent = max_concurrent
+
+        # Research aggregator for enhanced result processing
+        self.aggregator = ResearchAggregator()
 
         # Simple in-memory cache (in production, use Redis)
         self._cache: Dict[str, ResearchResult] = {}
@@ -161,10 +165,26 @@ class ResearchOrchestrator:
             source = self._create_knowledge_source(fact.metadata.get("source_name", "Unknown"))
             research_result.add_fact(fact, source)
 
-        # Calculate metrics
-        research_result.calculate_confidence()
-        research_result.remove_duplicates()
-        research_result.rank_by_relevance()
+        # Enhanced aggregation and quality assessment
+        research_result = self.aggregator._enhance_result(research_result)
+
+        # Calculate quality metrics
+        quality_score = self.aggregator.calculate_quality_score(research_result)
+        diversity_score = self.aggregator.calculate_diversity_score(research_result)
+
+        # Identify knowledge gaps
+        gaps = self.aggregator.identify_knowledge_gaps(research_result)
+        if gaps:
+            logger.warning(f"Knowledge gaps for {concept_label}: {', '.join(gaps)}")
+            suggestions = self.aggregator.suggest_additional_research(research_result)
+            if suggestions:
+                logger.info(f"Research suggestions: {len(suggestions)} recommendations available")
+
+        logger.info(
+            f"Quality metrics - Overall: {quality_score:.2f}, "
+            f"Diversity: {diversity_score:.2f}, "
+            f"Confidence: {research_result.confidence_score:.2f}"
+        )
 
         # Mark completed
         research_result.status = ResearchStatus.COMPLETED
