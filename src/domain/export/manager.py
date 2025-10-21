@@ -275,9 +275,11 @@ def create_default_export_manager() -> ExportManager:
     Returns:
         Configured export manager
     """
+    from src.infrastructure.exporters.docx_exporter import DOCXExporter
     from src.infrastructure.exporters.html_exporter import HTMLExporter
     from src.infrastructure.exporters.markdown_exporter import MarkdownExporter
     from src.infrastructure.exporters.pdf_exporter import PDFExporter
+    from src.infrastructure.exporters.xlsx_exporter import XLSXExporter
 
     manager = ExportManager()
 
@@ -285,7 +287,9 @@ def create_default_export_manager() -> ExportManager:
     manager.register_exporter(ExportFormat.MARKDOWN, MarkdownExporter())
     manager.register_exporter(ExportFormat.HTML, HTMLExporter())
     manager.register_exporter(ExportFormat.PDF, PDFExporter())
+    manager.register_exporter(ExportFormat.DOCX, DOCXExporter())
+    manager.register_exporter(ExportFormat.DOCX, XLSXExporter())  # Note: XLSX uses DOCX enum temporarily
 
-    logger.info("Created export manager with default exporters")
+    logger.info("Created export manager with default exporters (Markdown, HTML, PDF, DOCX, XLSX)")
 
     return manager

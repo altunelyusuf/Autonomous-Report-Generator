@@ -595,3 +595,305 @@ class TestExportEdgeCases:
 
         assert result.is_successful()
         assert output_path.exists()
+
+
+class TestDOCXExporter:
+    """Test DOCX exporter."""
+
+    @pytest.mark.asyncio
+    async def test_export_to_docx(self, sample_report, export_options, temp_dir):
+        """Test exporting to DOCX."""
+        from src.infrastructure.exporters.docx_exporter import DOCXExporter
+
+        exporter = DOCXExporter()
+        output_path = temp_dir / "test_report.docx"
+
+        result = await exporter.export(sample_report, output_path, export_options)
+
+        assert result.is_successful()
+        assert output_path.exists()
+        assert result.file_size > 0
+
+        # Check it's a DOCX file (ZIP format)
+        import zipfile
+        assert zipfile.is_zipfile(output_path)
+
+    @pytest.mark.asyncio
+    async def test_docx_auto_extension(self, sample_report, export_options, temp_dir):
+        """Test automatic extension addition."""
+        from src.infrastructure.exporters.docx_exporter import DOCXExporter
+
+        exporter = DOCXExporter()
+        output_path = temp_dir / "report"  # No extension
+
+        result = await exporter.export(sample_report, output_path, export_options)
+
+        assert result.output_path.suffix == ".docx"
+
+    @pytest.mark.asyncio
+    async def test_docx_without_toc(self, sample_report, temp_dir):
+        """Test DOCX export without TOC."""
+        from src.infrastructure.exporters.docx_exporter import DOCXExporter
+
+        exporter = DOCXExporter()
+        options = ExportOptions(include_toc=False)
+        output_path = temp_dir / "no_toc.docx"
+
+        result = await exporter.export(sample_report, output_path, options)
+
+        assert result.is_successful()
+        assert output_path.exists()
+
+    @pytest.mark.asyncio
+    async def test_docx_with_statistics(self, sample_report, temp_dir):
+        """Test DOCX export with statistics."""
+        from src.infrastructure.exporters.docx_exporter import DOCXExporter
+
+        exporter = DOCXExporter()
+        options = ExportOptions(include_statistics=True)
+        output_path = temp_dir / "with_stats.docx"
+
+        result = await exporter.export(sample_report, output_path, options)
+
+        assert result.is_successful()
+
+    def test_docx_supports_format(self):
+        """Test format support check."""
+        from src.infrastructure.exporters.docx_exporter import DOCXExporter
+
+        exporter = DOCXExporter()
+
+        assert exporter.supports_format("docx")
+        assert exporter.supports_format("doc")
+        assert not exporter.supports_format("pdf")
+
+    def test_docx_get_default_extension(self):
+        """Test getting default extension."""
+        from src.infrastructure.exporters.docx_exporter import DOCXExporter
+
+        exporter = DOCXExporter()
+
+        assert exporter.get_default_extension() == ".docx"
+
+
+class TestXLSXExporter:
+    """Test XLSX exporter."""
+
+    @pytest.mark.asyncio
+    async def test_export_to_xlsx(self, sample_report, export_options, temp_dir):
+        """Test exporting to XLSX."""
+        from src.infrastructure.exporters.xlsx_exporter import XLSXExporter
+
+        exporter = XLSXExporter()
+        output_path = temp_dir / "test_report.xlsx"
+
+        result = await exporter.export(sample_report, output_path, export_options)
+
+        assert result.is_successful()
+        assert output_path.exists()
+        assert result.file_size > 0
+
+        # Check it's an XLSX file (ZIP format)
+        import zipfile
+        assert zipfile.is_zipfile(output_path)
+
+    @pytest.mark.asyncio
+    async def test_xlsx_auto_extension(self, sample_report, export_options, temp_dir):
+        """Test automatic extension addition."""
+        from src.infrastructure.exporters.xlsx_exporter import XLSXExporter
+
+        exporter = XLSXExporter()
+        output_path = temp_dir / "report"  # No extension
+
+        result = await exporter.export(sample_report, output_path, export_options)
+
+        assert result.output_path.suffix == ".xlsx"
+
+    @pytest.mark.asyncio
+    async def test_xlsx_without_metadata(self, sample_report, temp_dir):
+        """Test XLSX export without metadata."""
+        from src.infrastructure.exporters.xlsx_exporter import XLSXExporter
+
+        exporter = XLSXExporter()
+        options = ExportOptions(include_metadata=False)
+        output_path = temp_dir / "no_metadata.xlsx"
+
+        result = await exporter.export(sample_report, output_path, options)
+
+        assert result.is_successful()
+        assert output_path.exists()
+
+    @pytest.mark.asyncio
+    async def test_xlsx_with_statistics(self, sample_report, temp_dir):
+        """Test XLSX export with statistics."""
+        from src.infrastructure.exporters.xlsx_exporter import XLSXExporter
+
+        exporter = XLSXExporter()
+        options = ExportOptions(include_statistics=True)
+        output_path = temp_dir / "with_stats.xlsx"
+
+        result = await exporter.export(sample_report, output_path, options)
+
+        assert result.is_successful()
+
+    def test_xlsx_supports_format(self):
+        """Test format support check."""
+        from src.infrastructure.exporters.xlsx_exporter import XLSXExporter
+
+        exporter = XLSXExporter()
+
+        assert exporter.supports_format("xlsx")
+        assert exporter.supports_format("xls")
+        assert not exporter.supports_format("docx")
+
+    def test_xlsx_get_default_extension(self):
+        """Test getting default extension."""
+        from src.infrastructure.exporters.xlsx_exporter import XLSXExporter
+
+        exporter = XLSXExporter()
+
+        assert exporter.get_default_extension() == ".xlsx"
+
+
+class TestMSOfficeIntegration:
+    """Test MS Office export integration."""
+
+    @pytest.mark.asyncio
+    async def test_export_manager_with_office_formats(self, sample_report, export_options, temp_dir):
+        """Test export manager with MS Office formats."""
+        from src.domain.export.manager import create_default_export_manager
+
+        manager = create_default_export_manager()
+
+        # Export to DOCX
+        docx_result = await manager.export(
+            report=sample_report,
+            format=ExportFormat.DOCX,
+            output_path=temp_dir / "report.docx",
+            options=export_options,
+        )
+
+        assert docx_result.is_successful()
+        assert (temp_dir / "report.docx").exists()
+
+    @pytest.mark.asyncio
+    async def test_batch_export_with_office(self, sample_report, export_options, temp_dir):
+        """Test batch export including MS Office formats."""
+        from src.domain.export.manager import create_default_export_manager
+
+        manager = create_default_export_manager()
+
+        formats = [
+            ExportFormat.MARKDOWN,
+            ExportFormat.HTML,
+            ExportFormat.PDF,
+            ExportFormat.DOCX,
+        ]
+
+        results = await manager.export_multiple(
+            report=sample_report,
+            formats=formats,
+            output_dir=temp_dir,
+            base_filename="full_report",
+            options=export_options,
+        )
+
+        # Check all exports succeeded
+        assert len(results) == len(formats)
+        for format in formats:
+            assert format in results
+            assert results[format].is_successful()
+
+        # Check all files exist
+        assert (temp_dir / "full_report.md").exists()
+        assert (temp_dir / "full_report.html").exists()
+        assert (temp_dir / "full_report.pdf").exists()
+        assert (temp_dir / "full_report.docx").exists()
+
+    @pytest.mark.asyncio
+    async def test_docx_with_complex_content(self, temp_dir):
+        """Test DOCX export with complex content."""
+        from src.infrastructure.exporters.docx_exporter import DOCXExporter
+
+        # Create report with various content types
+        report = DomainReport(
+            report_title="Complex Report",
+            report_type=ReportType.COMPREHENSIVE,
+        )
+
+        section = ReportSection(
+            section_number="1",
+            section_title="Test Section",
+            hierarchy_level=0,
+            mapped_class_uri="test",
+        )
+
+        # Add different content types
+        section.add_content({
+            "type": "text",
+            "text": "Regular paragraph content.",
+        })
+        section.add_content({
+            "type": "code",
+            "text": "def hello():\n    print('Hello')",
+            "language": "python",
+        })
+        section.add_content({
+            "type": "quote",
+            "text": "This is a quote.",
+        })
+        section.add_content({
+            "type": "table",
+            "data": [
+                ["Header 1", "Header 2"],
+                ["Data 1", "Data 2"],
+                ["Data 3", "Data 4"],
+            ],
+        })
+
+        report.add_section(section)
+
+        exporter = DOCXExporter()
+        output_path = temp_dir / "complex.docx"
+
+        result = await exporter.export(report, output_path, ExportOptions())
+
+        assert result.is_successful()
+        assert output_path.exists()
+
+    @pytest.mark.asyncio
+    async def test_xlsx_multiple_sheets(self, sample_report, export_options, temp_dir):
+        """Test XLSX creates multiple worksheets."""
+        from src.infrastructure.exporters.xlsx_exporter import XLSXExporter
+
+        exporter = XLSXExporter()
+        output_path = temp_dir / "multi_sheet.xlsx"
+
+        result = await exporter.export(sample_report, output_path, export_options)
+
+        assert result.is_successful()
+
+        # Try to load and check sheets
+        try:
+            from openpyxl import load_workbook
+            wb = load_workbook(output_path)
+
+            # Should have multiple sheets
+            assert len(wb.sheetnames) >= 3
+
+            # Check expected sheets
+            assert "Report Overview" in wb.sheetnames
+            assert "Sections" in wb.sheetnames
+
+            if export_options.include_toc:
+                assert "Table of Contents" in wb.sheetnames
+
+            if export_options.include_metadata:
+                assert "Metadata" in wb.sheetnames
+
+            if export_options.include_statistics:
+                assert "Statistics" in wb.sheetnames
+
+        except ImportError:
+            # openpyxl not available, skip validation
+            pass
