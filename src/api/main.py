@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 
 from src.api.exceptions import APIException
 from src.api.models import ErrorResponse, HealthResponse
-from src.api.routes import export, quality, reports
+from src.api.routes import export, health, quality, reports
 
 # Configure logging
 logging.basicConfig(
@@ -86,34 +86,6 @@ async def general_exception_handler(request: Request, exc: Exception):
     )
 
 
-# Health check endpoint
-@app.get(
-    "/health",
-    response_model=HealthResponse,
-    tags=["health"],
-    summary="Health check",
-    description="Check API health and component status",
-)
-async def health_check() -> HealthResponse:
-    """Health check endpoint.
-
-    Returns:
-        Health status
-    """
-    return HealthResponse(
-        status="healthy",
-        version="1.0.0",
-        timestamp=datetime.utcnow(),
-        components={
-            "api": "healthy",
-            "ontology_parser": "healthy",
-            "report_generator": "healthy",
-            "quality_assessor": "healthy",
-            "export_manager": "healthy",
-        },
-    )
-
-
 # Root endpoint
 @app.get("/", tags=["root"])
 async def root():
@@ -128,6 +100,7 @@ async def root():
 
 
 # Include routers
+app.include_router(health.router)
 app.include_router(reports.router)
 app.include_router(quality.router)
 app.include_router(export.router)

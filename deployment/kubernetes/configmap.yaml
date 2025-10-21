@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: report-generator-config
+  labels:
+    app: report-generator
+data:
+  redis-url: "redis://report-generator-redis:6379/0"
+  log-level: "INFO"
+  cache-ttl: "3600"
+  max-cache-size: "1000"
+  quality-threshold: "75.0"
+
+  # Application settings
+  app.yaml: |
+    application:
+      name: "Autonomous Report Generator"
+      version: "1.0.0"
+      environment: "production"
+
+    server:
+      host: "0.0.0.0"
+      port: 8000
+      workers: 4
+      reload: false
+
+    cache:
+      memory:
+        max_size: 1000
+        ttl: 3600
+      file:
+        max_size_mb: 500
+        ttl: 86400
+
+    quality:
+      overall_threshold: 75.0
+      content_threshold: 70.0
+      citation_threshold: 70.0
+      structure_threshold: 70.0
+      readability_threshold: 60.0
+
+    export:
+      max_file_size_mb: 100
+      allowed_formats:
+        - markdown
+        - html
+        - pdf
+        - docx
+        - xlsx
+
+    monitoring:
+      metrics_enabled: true
+      prometheus_port: 9090
+      health_check_interval: 30
