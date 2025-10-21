@@ -1,0 +1,137 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: report-generator-api
+  labels:
+    app: report-generator
+    component: api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: report-generator
+      component: api
+  template:
+    metadata:
+      labels:
+        app: report-generator
+        component: api
+    spec:
+      containers:
+      - name: api
+        image: report-generator:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+          protocol: TCP
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: report-generator-secrets
+              key: database-url
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: report-generator-config
+              key: redis-url
+        - name: CACHE_DIR
+          value: "/app/data/cache"
+        - name: EXPORT_DIR
+          value: "/app/data/exports"
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: report-generator-secrets
+              key: openai-api-key
+        - name: ANTHROPIC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: report-generator-secrets
+              key: anthropic-api-key
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: cache-volume
+          mountPath: /app/data/cache
+        - name: export-volume
+          mountPath: /app/data/exports
+        - name: logs-volume
+          mountPath: /app/logs
+      volumes:
+      - name: cache-volume
+        persistentVolumeClaim:
+          claimName: report-generator-cache-pvc
+      - name: export-volume
+        persistentVolumeClaim:
+          claimName: report-generator-export-pvc
+      - name: logs-volume
+        persistentVolumeClaim:
+          claimName: report-generator-logs-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: report-generator-api
+  labels:
+    app: report-generator
+    component: api
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  selector:
+    app: report-generator
+    component: api
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: report-generator-api-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: report-generator-api
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
